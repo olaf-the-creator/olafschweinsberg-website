@@ -1,0 +1,10 @@
+{
+  "hosted-zone:account=668467132136:domainName=olafschweinsberg.com:region=us-west-2": {
+    "Id": "/hostedzone/Z07320412GVL8P01Z5JEY",
+    "Name": "olafschweinsberg.com."
+  },
+  "hosted-zone:account=668467132136:domainName=olafschweinsberg.com:region=us-east-1": {
+    "Id": "/hostedzone/Z07320412GVL8P01Z5JEY",
+    "Name": "olafschweinsberg.com."
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+build/
+cdk.out/
+dist/
+.idea/
+*.iml
+.DS_Store
+.env*
