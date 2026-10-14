@@ -11,9 +11,9 @@ type Hobby = {
 
 export type WorkItem = {
   project: string;
-  projectUrl: string;
+  projectUrl?: string;
   description: string;
-  sourceUrl: string;
+  sourceUrl?: string;
 };
 
 const ExternalIcon = () => (
@@ -39,7 +39,6 @@ export type BioPageProps = {
   bioIntro: string;
   bio: string;
   topLinks: LinkButton[];
-  selectedWorkNote: string;
   work: WorkItem[];
   hobbies: Hobby[];
   contactTitle: string;
@@ -60,20 +59,20 @@ const BioPage = (props: BioPageProps) => {
         <div className="bio-page__topbar">
           <p className="bio-page__eyebrow">PERSONAL WEBSITE</p>
           <div
-              className="bio-page__top-links"
-              aria-label="Primary social links"
-            >
-              {props.topLinks.map((link) => (
-                <a
-                  key={`top-${link.icon.iconName}`}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FontAwesomeIcon icon={link.icon} />
-                </a>
-              ))}
-            </div>
+            className="bio-page__top-links"
+            aria-label="Primary social links"
+          >
+            {props.topLinks.map((link) => (
+              <a
+                key={`top-${link.icon.iconName}`}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FontAwesomeIcon icon={link.icon} />
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="bio-page__hero-top">
@@ -135,32 +134,39 @@ const BioPage = (props: BioPageProps) => {
               {props.work.map((item) => (
                 <tr key={item.project}>
                   <th scope="row" className="bio-page__table-project">
-                    <a
-                      href={item.projectUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {item.project}
-                    </a>
+                    {item.projectUrl ? (
+                      <a
+                        href={item.projectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {item.project}
+                      </a>
+                    ) : (
+                      item.project
+                    )}
                   </th>
                   <td className="bio-page__table-desc">{item.description}</td>
                   <td className="bio-page__table-source">
-                    <a
-                      href={item.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${item.project} source on GitHub (opens in a new tab)`}
-                    >
-                      GitHub
-                      <ExternalIcon />
-                    </a>
+                    {item.sourceUrl ? (
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${item.project} source on GitHub (opens in a new tab)`}
+                      >
+                        GitHub
+                        <ExternalIcon />
+                      </a>
+                    ) : (
+                      "TBD"
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="bio-page__note">{props.selectedWorkNote}</p>
       </section>
 
       <section className="bio-page__section" aria-label="Off the clock">
