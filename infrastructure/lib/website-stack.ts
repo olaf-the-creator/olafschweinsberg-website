@@ -22,6 +22,15 @@ export interface WebsiteStackProps extends StackProps {
     subDomain: string
 }
 
+/**
+ * SPAs served under a path of the site, each from its own bucket and deployed from its own repo.
+ * `id` prefixes the construct IDs: changing it would replace the (RETAIN, fixed-name) bucket.
+ */
+const PATH_APPS = [
+    { id: 'ArsenalIq', prefix: 'arsenal-iq' }, // ~/projects/bpe/poc (Vue)
+    { id: 'Mentat', prefix: 'mentat' },        // ~/projects/mentat/web (React)
+];
+
 export interface CloudFrontConstructs {
     contentBucket: s3.Bucket,
     distribution: cloudfront.Distribution
@@ -62,45 +71,49 @@ export class WebsiteStack extends Stack {
         });
 
         // Viewer-request routing (see lib/functions/spa-router.js): apex -> www redirect,
-        // /arsenal-iq -> /arsenal-iq/ redirect, and index.html rewrites for each SPA's
+        // /<prefix> -> /<prefix>/ redirect, and index.html rewrites for each SPA's
         // extensionless routes. Missing assets are not rewritten, so they 404 natively.
         const routingFunction = new cloudfront.Function(this, 'SpaRoutingFunction', {
             runtime: cloudfront.FunctionRuntime.JS_2_0,
             code: cloudfront.FunctionCode.fromInline(
                 fs.readFileSync(path.join(__dirname, 'functions', 'spa-router.js'), 'utf8')
                     .replace(/__APEX_DOMAIN__/g, apexDomain)
-                    .replace(/__SITE_DOMAIN__/g, siteDomain)),
-        });
-
-        // Separate bucket for the arsenal-iq Vue app. CloudFront forwards the full request
-        // path to the origin, so its objects MUST live under the `arsenal-iq/` key prefix
-        // (e.g. arsenal-iq/index.html), never at the bucket root.
-        const arsenalBucket = new s3.Bucket(this, 'ArsenalIqBucket', {
-            bucketName: 'olafschweinsberg-arsenal-iq-assets',
-            publicReadAccess: false,
-            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-            enforceSSL: true,
-            encryption: s3.BucketEncryption.S3_MANAGED,
-            versioned: true,
-            removalPolicy: RemovalPolicy.RETAIN,
+                    .replace(/__SITE_DOMAIN__/g, siteDomain)
+                    .replace(/__PATH_APPS__/g, JSON.stringify(PATH_APPS.map(a => a.prefix)))),
         });
 
         const functionAssociations = [{
             function: routingFunction,
             eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
         }];
-        const arsenalBehavior: cloudfront.BehaviorOptions = {
-            origin: cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(arsenalBucket),
-            compress: true,
-            allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-            viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            // Respects origin Cache-Control (min TTL 1s, max 1y).
-            // Expected metadata: arsenal-iq/index.html -> `no-cache`;
-            // arsenal-iq/assets/* (hashed) -> `public, max-age=31536000, immutable`.
-            cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-            responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
-            functionAssociations,
-        };
+
+        // One bucket per path app. CloudFront forwards the full request path to the origin,
+        // so its objects MUST live under the `<prefix>/` key prefix (e.g. arsenal-iq/index.html),
+        // never at the bucket root.
+        const pathApps = PATH_APPS.map(app => {
+            const bucket = new s3.Bucket(this, `${app.id}Bucket`, {
+                bucketName: `olafschweinsberg-${app.prefix}-assets`,
+                publicReadAccess: false,
+                blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+                enforceSSL: true,
+                encryption: s3.BucketEncryption.S3_MANAGED,
+                versioned: true,
+                removalPolicy: RemovalPolicy.RETAIN,
+            });
+            const behavior: cloudfront.BehaviorOptions = {
+                origin: cloudfrontOrigins.S3BucketOrigin.withOriginAccessControl(bucket),
+                compress: true,
+                allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                // Respects origin Cache-Control (min TTL 1s, max 1y).
+                // Expected metadata: <prefix>/index.html -> `no-cache`;
+                // <prefix>/assets/* (hashed) -> `public, max-age=31536000, immutable`.
+                cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+                functionAssociations,
+            };
+            return { ...app, bucket, behavior };
+        });
 
         const distribution = new cloudfront.Distribution(this, 'SiteDistribution', {
             certificate: tlsCertificate,
@@ -116,18 +129,18 @@ export class WebsiteStack extends Stack {
                 responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
                 functionAssociations,
             },
-            additionalBehaviors: {
-                // Exact match only: `/arsenal-iq*` would also capture `/arsenal-iqfoo`.
-                // `/arsenal-iq` is always answered by the router function (301 to `/arsenal-iq/`).
-                '/arsenal-iq': arsenalBehavior,
-                '/arsenal-iq/*': arsenalBehavior,
-            },
+            // Exact match only: `/arsenal-iq*` would also capture `/arsenal-iqfoo`.
+            // `/arsenal-iq` is always answered by the router function (301 to `/arsenal-iq/`).
+            additionalBehaviors: Object.fromEntries(pathApps.flatMap(a => [
+                [`/${a.prefix}`, a.behavior],
+                [`/${a.prefix}/*`, a.behavior],
+            ])),
         });
 
         // With OAC, S3 answers 403 for missing keys unless the caller may list the bucket.
         // Grant ListBucket next to the GetObject statement OAC already added so missing
         // files return a native 404.
-        [contentBucket, arsenalBucket].forEach(bucket => bucket.addToResourcePolicy(new iam.PolicyStatement({
+        [contentBucket, ...pathApps.map(a => a.bucket)].forEach(bucket => bucket.addToResourcePolicy(new iam.PolicyStatement({
             actions: ['s3:ListBucket'],
             resources: [bucket.bucketArn],
             principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
@@ -170,17 +183,24 @@ export class WebsiteStack extends Stack {
             zone: hostedZone
         });
 
-        // Read by the local Vue deploy (see docs/arsenal-iq-hosting.md)
-        new ssm.StringParameter(this, 'ArsenalIqBucketNameParam', {
-            parameterName: '/olafschweinsberg/arsenal-iq/bucket-name',
-            stringValue: arsenalBucket.bucketName,
+        // Read by each app's local deploy script (see docs/arsenal-iq-hosting.md)
+        pathApps.forEach(a => {
+            new ssm.StringParameter(this, `${a.id}BucketNameParam`, {
+                parameterName: `/olafschweinsberg/${a.prefix}/bucket-name`,
+                stringValue: a.bucket.bucketName,
+            });
+            new ssm.StringParameter(this, `${a.id}DistributionIdParam`, {
+                parameterName: `/olafschweinsberg/${a.prefix}/distribution-id`,
+                stringValue: distribution.distributionId,
+            });
+            new CfnOutput(this, `${a.id}BucketName`, { value: a.bucket.bucketName });
+            new CfnOutput(this, `${a.id}DistributionId`, { value: distribution.distributionId });
         });
-        new ssm.StringParameter(this, 'ArsenalIqDistributionIdParam', {
-            parameterName: '/olafschweinsberg/arsenal-iq/distribution-id',
-            stringValue: distribution.distributionId,
+        // Mentat also needs its public URL: login callbacks and CORS in its own stack, smoke checks in its deploy
+        new ssm.StringParameter(this, 'MentatUrlParam', {
+            parameterName: '/olafschweinsberg/mentat/url',
+            stringValue: `https://${siteDomain}/mentat`,
         });
-        new CfnOutput(this, 'ArsenalIqBucketName', { value: arsenalBucket.bucketName });
-        new CfnOutput(this, 'ArsenalIqDistributionId', { value: distribution.distributionId });
 
         new CfnOutput(this, 'Bucket', { value: contentBucket.bucketName });
         new CfnOutput(this, 'DistributionId', { value: distribution.distributionId });

@@ -1,5 +1,10 @@
 # arsenal-iq hosting
 
+> **Mentat** (`~/projects/mentat`, React) is hosted the same way at `/mentat/`: path apps are listed in `PATH_APPS`
+> (`lib/website-stack.ts`), which drives the buckets, behaviors, router function and SSM parameters. Mentat also
+> gets `/olafschweinsberg/mentat/url`, which its CDK stack reads for login callbacks and CORS. Deploy with
+> `npm run deploy` in `mentat/web`. Everything below applies to it with `mentat` in place of `arsenal-iq`.
+
 `https://www.olafschweinsberg.com/arsenal-iq/` serves a separate Vue SPA (repo: `~/projects/bpe/poc`)
 from the same CloudFront distribution as the React site at `/`.
 

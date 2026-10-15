@@ -28,9 +28,18 @@ function handler(event) {
         return redirect('https://__SITE_DOMAIN__' + uri + suffix);
     }
 
-    // Exactly /arsenal-iq -> /arsenal-iq/ (/arsenal-iqfoo is NOT matched and stays with the React app)
-    if (uri === '/arsenal-iq') {
-        return redirect('/arsenal-iq/' + suffix);
+    // Apps served under a path, e.g. ['arsenal-iq', 'mentat'] (from PATH_APPS in lib/website-stack.ts)
+    var apps = __PATH_APPS__;
+    var root = '';
+    for (var i = 0; i < apps.length; i++) {
+        var base = '/' + apps[i];
+        // Exactly /<app> -> /<app>/ (/arsenal-iqfoo is NOT matched and stays with the React app)
+        if (uri === base) {
+            return redirect(base + '/' + suffix);
+        }
+        if (uri.indexOf(base + '/') === 0) {
+            root = base;
+        }
     }
 
     // SPA deep links: extensionless last segment -> that SPA's index.html.
@@ -38,7 +47,7 @@ function handler(event) {
     // so a missing asset returns a native 404 from S3.
     var lastSegment = uri.substring(uri.lastIndexOf('/') + 1);
     if (lastSegment.indexOf('.') === -1) {
-        request.uri = uri.indexOf('/arsenal-iq/') === 0 ? '/arsenal-iq/index.html' : '/index.html';
+        request.uri = root + '/index.html';
     }
     return request;
 }
