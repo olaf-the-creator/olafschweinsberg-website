@@ -14,6 +14,7 @@ export type WorkItem = {
   projectUrl?: string;
   description: string;
   sourceUrl?: string;
+  sourceLabel?: string;
 };
 
 const ExternalIcon = () => (
@@ -159,7 +160,7 @@ const BioPage = (props: BioPageProps) => {
                         <ExternalIcon />
                       </a>
                     ) : (
-                      "TBD"
+                      item.sourceLabel ?? "TBD"
                     )}
                   </td>
                 </tr>

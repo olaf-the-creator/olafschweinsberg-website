@@ -14,7 +14,7 @@ const bioProps: Omit<BioPageProps, "topLinks"> = {
   name: "OLAF SCHWEINSBERG",
   subheading: "AI Product Director, former Amazon Software Engineer",
   bioIntro: "AI product leader, builder, very proud dad",
-  bio: "I started in supply chain analytics, where I built an ML model that predicted when cargo ships would show up. It turned out, building was the only part of that job I really liked. So I taught myself to code and spent five years as an engineer at Amazon, scaling AI inside operations that still ran on spreadsheets. Now I lead AI product strategy at Epicor in Washington, D.C., and I still prototype my own ideas before asking anyone to fund them. My toughest stakeholders though are at home. As a new father, I’ve learned that no roadmap survives bedtime.",
+  bio: "I started in supply chain analytics, where I built an ML model that predicted when cargo ships would show up. It turned out, building cool solutions for customers was the part of the job that I loved most. So I taught myself to code and spent five years as an engineer at Amazon, scaling AI inside operations that still ran on spreadsheets. Now I lead AI product strategy at Epicor in Washington, D.C., and I still prototype my own ideas before asking anyone to fund them. My toughest stakeholders though are at home. As a new father, I’ve learned that no roadmap survives bedtime.",
   work: [
     {
       project: "ArsenalIQ",
@@ -31,9 +31,10 @@ const bioProps: Omit<BioPageProps, "topLinks"> = {
       sourceUrl: "https://github.com/olaf-the-creator/olafschweinsberg-website",
     },
     {
-      project: "AutoML Wizard (WIP)",
+      project: "Mentat (WIP)",
       description:
-        "Quickly find the right model and configurations with low computational resources.",
+        "An AutoML wizard to quickly identify and train the right ML model and configurations with low computational resources.",
+      sourceLabel: "Private Repo",
     },
   ],
   hobbies: [
