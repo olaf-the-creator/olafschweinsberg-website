@@ -17,6 +17,13 @@ const bioProps: Omit<BioPageProps, "topLinks"> = {
   bio: "I started in supply chain analytics, where I built an ML model that predicted when cargo ships would show up. It turned out, building cool solutions for customers was the part of the job that I loved most. So I taught myself to code and spent five years as an engineer at Amazon, scaling AI inside operations that still ran on spreadsheets. Now I lead AI product strategy at Epicor in Washington, D.C., and I still prototype my own ideas before asking anyone to fund them. My toughest stakeholders though are at home. As a new father, I’ve learned that no roadmap survives bedtime.",
   work: [
     {
+      project: "Mentat",
+      projectUrl: "https://www.olafschweinsberg.com/mentat",
+      description:
+        "An AutoML wizard to quickly identify and train the right ML model and configurations with low computational resources.",
+      sourceLabel: "Private Repo",
+    },
+    {
       project: "ArsenalIQ",
       projectUrl: "https://www.olafschweinsberg.com/arsenal-iq/",
       description:
@@ -29,12 +36,6 @@ const bioProps: Omit<BioPageProps, "topLinks"> = {
       description:
         "This site, a living resume that shows how I build and ship. A TypeScript React single-page app on AWS, defined as code with the CDK: private S3 behind CloudFront with TLS, security headers and HTTP/3. One cdk deploy builds, publishes and invalidates the cache.",
       sourceUrl: "https://github.com/olaf-the-creator/olafschweinsberg-website",
-    },
-    {
-      project: "Mentat (WIP)",
-      description:
-        "An AutoML wizard to quickly identify and train the right ML model and configurations with low computational resources.",
-      sourceLabel: "Private Repo",
     },
   ],
   hobbies: [
