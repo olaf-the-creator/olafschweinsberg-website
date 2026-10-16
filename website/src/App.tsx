@@ -21,7 +21,13 @@ const bioProps: Omit<BioPageProps, "topLinks"> = {
       projectUrl: "https://www.olafschweinsberg.com/mentat",
       description:
         "An AutoML wizard to quickly identify and train the right ML model and configurations with low computational resources.",
-      sourceLabel: "Private Repo",
+      sourceUrl: "https://github.com/olaf-the-creator/mentat",
+    },
+    {
+      project: "Mentat MCP",
+      description:
+        "I added an MCP server to Mentat so AI agents can use it for data modeling",
+      sourceUrl: "https://github.com/olaf-the-creator/mentat",
     },
     {
       project: "ArsenalIQ",
